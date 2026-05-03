@@ -1,0 +1,30 @@
+{
+  "name": "impulso-gym-backend",
+  "version": "1.0.0",
+  "description": "REST API for gym member management — Node.js · Express · PostgreSQL",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test:db": "node TestDB.js",
+    "test:env": "node EnvTest.js",
+    "test:post": "node TestPostSocio.js",
+    "test:put": "node TestPutSocio.js",
+    "test:delete": "node TestDeleteSocio.js"
+  },
+  "keywords": [
+    "express",
+    "postgresql",
+    "rest-api",
+    "node",
+    "gym-management"
+  ],
+  "author": "Valentín Santamaría",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  }
+}

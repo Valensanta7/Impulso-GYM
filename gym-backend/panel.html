@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Impulso Gimnasio</title>
+  <style>
+    /* ...todos tus estilos anteriores y mejorados... */
+    .loader {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid #3498db;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-top: 10px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    input.error {
+      border-color: #e74c3c;
+    }
+    /* Resto de los estilos siguen igual... */
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>⚡ Impulso <span>Gimnasio</span></h1>
+    <p class="eslogan">Potenciá tu entrenamiento</p>
+  </header>
+
+  <!-- Panel de métricas -->
+  <div class="dashboard-container">
+    <div class="metric-box">
+      <h3>👥 Socios activos</h3>
+      <p id="total-socios"><span class="loader"></span></p>
+    </div>
+  </div>
+
+  <div id="mensajes"></div>
+  <button onclick="cargarSocios()">🔄 Cargar socios</button>
+  <div id="listaSocios"></div>
+
+  <h2>➕ Crear nuevo socio</h2>
+  <input id="nombre" placeholder="Nombre" />
+  <input id="apellido" placeholder="Apellido" />
+  <input id="email" placeholder="Email" />
+  <input id="telefono" placeholder="Teléfono" />
+  <input id="id_tarjeta" placeholder="ID tarjeta" />
+  <button onclick="crearSocio()">✅ Crear</button>
+
+  <footer>
+    Sistema de Gestión – Impulso © 2025
+  </footer>
+
+  <script>
+    const API = "http://localhost:3000/api/socios";
+
+    function mostrarMensaje(texto, tipo) {
+      const contenedor = document.getElementById("mensajes");
+      contenedor.innerHTML = `<div class="msg ${tipo}">${texto}</div>`;
+      setTimeout(() => contenedor.innerHTML = "", 4000);
+    }
+
+    function resaltarErrores(ids) {
+      ids.forEach(id => {
+        const campo = document.getElementById(id);
+        if (!campo.value.trim()) {
+          campo.classList.add("error");
+        } else {
+          campo.classList.remove("error");
+        }
+      });
+    }
+
+    function limpiarCampos() {
+      ["nombre", "apellido", "email", "telefono", "id_tarjeta"].forEach(id => {
+        const campo = document.getElementById(id);
+        campo.value = "";
+        campo.classList.remove("error");
+      });
+    }
+
+    function cargarSocios() {
+      document.getElementById("total-socios").innerHTML = '<span class="loader"></span>';
+
+      fetch(API)
+        .then(res => res.json())
+        .then(data => {
+          const div = document.getElementById("listaSocios");
+          div.innerHTML = "";
+          document.getElementById("total-socios").textContent = data.length;
+
+          data.forEach(socio => {
+            const card = document.createElement("div");
+            card.className = "socio";
+            card.innerHTML = `
+              <strong>👤 ${socio.nombre} ${socio.apellido}</strong><br/>
+              📧 Email: ${socio.email}<br/>
+              📱 Teléfono: ${socio.telefono}<br/>
+              🆔 Tarjeta: ${socio.id_tarjeta}<br/>
+            `;
+            const btnEliminar = document.createElement("button");
+            btnEliminar.textContent = "🗑️ Eliminar";
+            btnEliminar.onclick = () => eliminar(socio.id_socio);
+            card.appendChild(btnEliminar);
+            const btnEditar = document.createElement("button");
+            btnEditar.textContent = "✏️ Editar";
+            btnEditar.onclick = () => editarSocio(socio);
+            card.appendChild(btnEditar);
+            div.appendChild(card);
+          });
+        })
+        .catch(err => {
+          console.error("⛔ Error al cargar socios:", err);
+          mostrarMensaje("❌ No se pudo cargar la lista.", "error");
+        });
+    }
+
+    function crearSocio() {
+      const nombre = document.getElementById("nombre").value.trim();
+      const apellido = document.getElementById("apellido").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const telefono = document.getElementById("telefono").value.trim();
+      const id_tarjeta = document.getElementById("id_tarjeta").value.trim();
+
+      resaltarErrores(["nombre", "apellido", "email", "telefono", "id_tarjeta"]);
+
+      if (!nombre || !apellido || !email || !telefono || !id_tarjeta) {
+        mostrarMensaje("⚠️ Todos los campos son obligatorios.", "error");
+        return;
+      }
+
+      const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      if (!emailValido) {
+        document.getElementById("email").classList.add("error");
+        mostrarMensaje("📧 El email no tiene formato válido.", "error");
+        return;
+      }
+
+      const body = { nombre, apellido, email, telefono, id_tarjeta };
+
+      fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error("Error al crear socio");
+        }
+        return res.json();
+      })
+      .then(() => {
+        limpiarCampos();
+        cargarSocios();
+        mostrarMensaje("✔️ Socio creado correctamente.", "success");
+      })
+      .catch(err => {
+        console.error("⛔ Error al crear socio:", err);
+        mostrarMensaje("❌ No se pudo crear el socio.", "error");
+      });
+    }
+
+    function eliminar(id) {
+      fetch(`${API}/${id}`, { method: "DELETE" })
+        .then(() => {
+          cargarSocios();
+          mostrarMensaje("🗑️ Socio eliminado.", "success");
+        })
+        .catch(err => {
+          console.error("⛔ Error al eliminar socio:", err);
+          mostrarMensaje("❌ No se pudo eliminar el socio.", "error");
+        });
+    }
+
+    function editarSocio(socio) {
+      const nuevoNombre = prompt("📝 Nuevo nombre:", socio.nombre);
+      const nuevoApellido = prompt("📝 Nuevo apellido:", socio.apellido);
+      const nuevoEmail = prompt("📝 Nuevo email:", socio.email);
+      const nuevoTelefono = prompt("📝 Nuevo teléfono:", socio.telefono);
+      const nuevaTarjeta = prompt("📝 Nuevo ID tarjeta:", socio.id_tarjeta);
+
+      if (!nuevoNombre || !nuevoApellido || !nuevoEmail || !nuevoTelefono || !nuevaTarjeta) {
+        mostrarMensaje("⚠️ Todos los campos son obligatorios.", "error");
+        return;
+      }
+
+      const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nuevoEmail);
+      if (!emailValido) {
+        mostrarMensaje("📧 Email inválido.", "error");
+        return;
+      }
+
+      const body = {
+        nombre: nuevoNombre,
+        apellido: nuevoApellido,
+        email: nuevoEmail,
+        telefono: nuevoTelefono,
+        id_tarjeta: nuevaTarjeta
+      };
+
+      fetch(`${API}/${socio.id_socio}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error("Error al actualizar socio");
+        }
+        return res.json();
+      })
+      .then(() => {
+        cargarSocios();
+        mostrarMensaje("✏️ Socio actualizado correctamente.", "success");
+      })
+      .catch(err => {
+        console.error("⛔ Error al actualizar socio:", err);
+        mostrarMensaje("❌ No se pudo actualizar el socio.", "error");
+      });
+    }
+
+    window.onload = cargarSocios;
+  </script>
+
+</body>
+</html>
